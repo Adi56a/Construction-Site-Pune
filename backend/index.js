@@ -2,20 +2,23 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const connectDB = require('./config/db');
+const siteRoutes = require('./routes/siteRoutes')
 
-// Load environment variables
+
 dotenv.config();
 
-// Connect to Database
+
 connectDB();
 
 const app = express();
 
-// Middleware
+
 app.use(cors());
 app.use(express.json());
 
-// Basic Route for testing
+
+app.use('/api/sites', siteRoutes);
+
 app.get('/', (req, res) => {
     res.send('API is running...');
 });
