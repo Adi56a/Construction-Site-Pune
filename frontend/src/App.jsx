@@ -8,6 +8,9 @@ import SiteDetails from './pages/SiteDetails'
 import AddMaterialList from './pages/AddMaterialList'
 import SiteMaterials from './pages/SiteMaterial'
 import SiteMaterialDetails from './pages/SiteMaterialDetails'
+import Rent from './pages/Rent'
+import AddRentBuilding from './pages/AddRentBuilding'
+import FlatPaymentEntries from './pages/FlatPaymentEntries'
 
 
 function App() {
@@ -21,6 +24,10 @@ function App() {
         <Route path="/add-material-list" element={<AddMaterialList />} />
         <Route path="/site-material" element={<SiteMaterials />} />
         <Route path="/site-material-details" element={<SiteMaterialDetails />} />
+        <Route path="/rent" element={<Rent />} />
+        <Route path="/add-rent-building" element={<AddRentBuilding />} />
+        <Route path="/flat-payment-entries" element={<FlatPaymentEntries />} />
+
         
         {/* Add other routes here */}
       </Routes>
