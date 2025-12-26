@@ -11,6 +11,7 @@ import SiteMaterialDetails from './pages/SiteMaterialDetails'
 import Rent from './pages/Rent'
 import AddRentBuilding from './pages/AddRentBuilding'
 import FlatPaymentEntries from './pages/FlatPaymentEntries'
+import Expense from './pages/Expense'
 
 
 function App() {
@@ -27,6 +28,8 @@ function App() {
         <Route path="/rent" element={<Rent />} />
         <Route path="/add-rent-building" element={<AddRentBuilding />} />
         <Route path="/flat-payment-entries" element={<FlatPaymentEntries />} />
+        <Route path="/expense" element={<Expense />} />
+
 
         
         {/* Add other routes here */}
