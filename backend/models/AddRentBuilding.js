@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-// Import the RentDetails model to reference it
-const RentDetails = require('../models/RentDetailsModel');
+// Import the Expense model to reference it
+const Expense = require('../models/ExpenseModel');
 
 // Define the schema for the building
 const buildingSchema = new mongoose.Schema({
@@ -19,10 +19,13 @@ const buildingSchema = new mongoose.Schema({
     type: Date,
     default: Date.now   
   },
-  // Add RentDetailsId as an array of ObjectIds
   RentDetailsId: [{
-    type: mongoose.Schema.Types.ObjectId,  // Store ObjectId references
-    ref: 'RentDetails'  // Referencing the RentDetails model
+    type: mongoose.Schema.Types.ObjectId,  
+    ref: 'RentDetails'  
+  }],
+  ExpenseIds: [{
+    type: mongoose.Schema.Types.ObjectId,  // Array of ObjectIds for Expenses
+    ref: 'Expense'  // Referencing the Expense model
   }]
 });
 
