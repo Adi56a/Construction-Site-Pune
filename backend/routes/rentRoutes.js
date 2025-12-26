@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const AddRentBuilding  = require('../models/AddRentBuilding')
 const RentDetails  = require('../models/RentDetailsModel')
+const Expense  = require('../models/ExpenseModel')
 
 
 router.get('/' , (req,res) => {
@@ -134,5 +135,79 @@ router.get('/get-building/:buildingId', async (req, res) => {
     }
 });
 
+router.post('/create-expense', async (req, res) => {
+  try {
+    const { date, name, amount, reason_of_expense, total_amount, buildingId } = req.body;
+
+    // Validate that the buildingId is provided
+    if (!buildingId) {
+      return res.status(400).json({ message: 'Building ID is required' });
+    }
+
+    // Create the new expense, including the BuildingID
+    const expense = new Expense({
+      date,
+      name,
+      amount,
+      reason_of_expense,
+      total_amount,
+      BuildingID: buildingId // Add the BuildingID here
+    });
+    await expense.save();
+
+    // Find the AddRentBuilding document by ID and update its ExpenseIds array
+    const building = await AddRentBuilding.findById(buildingId);
+    if (!building) {
+      return res.status(404).json({ message: 'Building not found' });
+    }
+
+    // Append the newly created expense's ID to the ExpenseIds array of the building
+    building.ExpenseIds.push(expense._id);
+    await building.save(); // Save the updated building document
+
+    res.status(201).json({
+      message: 'Expense created and added to the building',
+      expense,
+      building
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      message: 'Error creating expense or updating building',
+      error: error.message || error
+    });
+  }
+});
+
+router.get('/get-building-expenses/:buildingId', async (req, res) => {
+  try {
+    const { buildingId } = req.params;  // Get buildingId from URL params
+
+    // Validate that buildingId is provided
+    if (!buildingId) {
+      return res.status(400).json({ message: 'Building ID is required' });
+    }
+
+    // Find the AddRentBuilding by buildingId and populate the ExpenseIds array
+    const building = await AddRentBuilding.findById(buildingId)
+      .populate('ExpenseIds');  // Populating the ExpenseIds array with full expense details
+
+    if (!building) {
+      return res.status(404).json({ message: 'Building not found' });
+    }
+
+    // Return the building data with populated expenses
+    res.status(200).json({
+      message: 'Building expenses retrieved successfully',
+      building: building
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: 'Error retrieving building expenses',
+      error: error.message || error
+    });
+  }
+});
 
 module.exports = router;
