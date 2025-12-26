@@ -13,7 +13,7 @@ const Rent = () => {
     },
     {
       label: 'Expenses',
-      path: '/expenses',
+      path: '/expense',
       description: 'Track rent-related expenses, utilities, and other recurring costs.',
       icon: FiPieChart, // expense / analytics
     },
