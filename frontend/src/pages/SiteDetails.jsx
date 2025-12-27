@@ -77,7 +77,7 @@ const SiteDetails = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-sky-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Site Header */}
         <div className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl border border-sky-100 overflow-hidden">
           <div className="bg-gradient-to-r from-sky-500 to-sky-600 px-8 py-8 text-white">
@@ -131,9 +131,9 @@ const SiteDetails = () => {
           </div>
         </div>
 
-        {/* Main Action Blocks */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-          {/* Material Block */}
+        {/* ✅ ROW 1: Site, Rent, Account */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Materials (Site) */}
           <div
             className="group cursor-pointer bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             onClick={() => handleNavigate('/site-material')}
@@ -145,10 +145,10 @@ const SiteDetails = () => {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-sky-600 transition-colors">
-                Materials
+                Site Materials
               </h3>
               <p className="text-sm text-sky-600 mb-6 leading-relaxed">
-                Track material inventory, usage, procurement, and supplier management for this site.
+                Track material inventory and usage for this site.
               </p>
               <div className="flex items-center justify-center gap-2 text-sky-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
                 <span>Manage Materials</span>
@@ -159,22 +159,22 @@ const SiteDetails = () => {
             </div>
           </div>
 
-          {/* Labour Block */}
+          {/* Labour (Rent) */}
           <div
             className="group cursor-pointer bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             onClick={() => handleNavigate('/labour')}
           >
             <div className="p-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-sky-400 to-sky-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-sky-600 transition-colors">
+              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-emerald-600 transition-colors">
                 Labour
               </h3>
               <p className="text-sm text-sky-600 mb-6 leading-relaxed">
-                Manage worker attendance, payments, advances, and transfers for site personnel.
+                Manage worker attendance, payments and advances.
               </p>
               <div className="flex items-center justify-center gap-2 text-sky-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
                 <span>Manage Labour</span>
@@ -185,22 +185,22 @@ const SiteDetails = () => {
             </div>
           </div>
 
-          {/* Account Block */}
+          {/* Account */}
           <div
             className="group cursor-pointer bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             onClick={() => handleNavigate('/account')}
           >
             <div className="p-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-sky-400 to-sky-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-sky-600 transition-colors">
+              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-indigo-600 transition-colors">
                 Accounts
               </h3>
               <p className="text-sm text-sky-600 mb-6 leading-relaxed">
-                Track expenses, payments, budgets, and financial reporting for this construction site.
+                Track expenses, payments and financial reporting.
               </p>
               <div className="flex items-center justify-center gap-2 text-sky-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
                 <span>Manage Accounts</span>
@@ -210,26 +210,55 @@ const SiteDetails = () => {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* New AddMaterialList Block */}
+        {/* ✅ ROW 2: Add Labour List, Add Material List */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Add Labour List */}
+          <div
+            className="group cursor-pointer bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+            onClick={() => handleNavigate('/add-labour-list')}
+          >
+            <div className="p-8 text-center">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-emerald-600 transition-colors">
+                Add Labour List
+              </h3>
+              <p className="text-sm text-sky-600 mb-6 leading-relaxed">
+                Create master labour list with common Indian labour types and smart suggestions.
+              </p>
+              <div className="flex items-center justify-center gap-2 text-sky-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
+                <span>Add Labour Types</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {/* Add Material List */}
           <div
             className="group cursor-pointer bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-sky-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
             onClick={() => handleNavigate('/add-material-list')}
           >
             <div className="p-8 text-center">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-sky-400 to-sky-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-r from-amber-400 to-amber-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg">
                 <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-sky-600 transition-colors">
+              <h3 className="text-xl font-semibold text-sky-900 mb-2 group-hover:text-amber-600 transition-colors">
                 Add Material List
               </h3>
               <p className="text-sm text-sky-600 mb-6 leading-relaxed">
-                Create and manage master material list with standard units for consistent tracking.
+                Create master material list with standard units for consistent tracking.
               </p>
               <div className="flex items-center justify-center gap-2 text-sky-600 text-sm font-medium group-hover:translate-x-1 transition-transform">
-                <span>Add Materials</span>
+                <span>Add Material Types</span>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
