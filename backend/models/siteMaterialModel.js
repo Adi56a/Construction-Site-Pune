@@ -16,7 +16,7 @@ const siteMaterialSchema = new Schema({
   rate_of_material: {
     type: Number
   },
-  required_money_amount: {
+  total_money_amount: {
     type: Number
   },
   total_required_money_amount: {
@@ -25,9 +25,7 @@ const siteMaterialSchema = new Schema({
   total_required_material_amount: {
     type: Number
   },
-  remaining_material_amount: {
-    type: Number
-  },
+
   transaction_date: {
     type: Date,
     default: Date.now
