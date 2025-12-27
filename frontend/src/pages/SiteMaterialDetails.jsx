@@ -7,10 +7,9 @@ const emptyRow = {
   received_quantity: '',
   unit: '',
   rate_of_material: '',
-  required_money_amount: '',
-  total_required_money_amount: '',
+  total_money_amount: 0,  // ✅ AUTO-CALCULATED (Received Qty * Rate)
   total_required_material_amount: '',
-  remaining_material_amount: '',
+  total_required_money_amount: '',  // ✅ USER INPUT (NOT AUTO-CALCULATED)
 };
 
 const SiteMaterialDetails = () => {
@@ -46,7 +45,21 @@ const SiteMaterialDetails = () => {
 
   const siteId = site?.id;
 
-  // Fetch existing entries - NOW PROPER GET REQUEST
+  // ✅ AUTO-CALCULATE ONLY: Total Amount (Received Qty * Rate)
+  const calculateRow = (row) => {
+    const receivedQty = parseFloat(row.received_quantity) || 0;
+    const rate = parseFloat(row.rate_of_material) || 0;
+
+    const totalMoneyAmount = receivedQty * rate;  // ✅ ONLY THIS IS AUTO-CALCULATED
+
+    return {
+      ...row,
+      total_money_amount: totalMoneyAmount.toFixed(2),
+      // ✅ total_required_money_amount STAYS AS USER INPUT
+    };
+  };
+
+  // Fetch existing entries
   const fetchExistingEntries = useCallback(async () => {
     if (!siteId || !materialName) {
       setLoading(false);
@@ -55,7 +68,6 @@ const SiteMaterialDetails = () => {
 
     try {
       setLoading(true);
-      // ✅ CORRECTED: GET request with query params
       const res = await fetch(
         `${API_BASE}/getMaterialDetails?siteId=${siteId}&material_name=${encodeURIComponent(materialName)}`
       );
@@ -89,13 +101,15 @@ const SiteMaterialDetails = () => {
       setSubmitStatus({ type: 'error', message: 'Maximum 50 new entries allowed.' });
       return;
     }
-    setNewEntries((prev) => [...prev, { id: Date.now() + Math.random(), ...emptyRow }]);
+    const newRow = calculateRow({ ...emptyRow, id: Date.now() + Math.random() });
+    setNewEntries((prev) => [...prev, newRow]);
   }, [newEntries.length]);
 
   const updateNewEntryCell = (rowIndex, field, value) => {
     setNewEntries((prev) => {
+      const updatedRow = calculateRow({ ...prev[rowIndex], [field]: value });
       const copy = [...prev];
-      copy[rowIndex] = { ...copy[rowIndex], [field]: value };
+      copy[rowIndex] = updatedRow;
       return copy;
     });
   };
@@ -104,16 +118,35 @@ const SiteMaterialDetails = () => {
     setNewEntries((prev) => prev.filter((_, idx) => idx !== rowIndex));
   };
 
-  // Totals
-  const calcTotals = (rows) => ({
-    qty: rows.reduce((sum, r) => sum + (parseFloat(r.received_quantity) || 0), 0),
-    money: rows.reduce((sum, r) => sum + (parseFloat(r.total_required_money_amount) || 0), 0),
-  });
+  // ✅ CORRECTED TOTALS CALCULATION
+  const calcTotals = (rows) => {
+    const totalReceivedQty = rows.reduce((sum, r) => sum + (parseFloat(r.received_quantity) || 0), 0);
+    const totalAmount = rows.reduce((sum, r) => sum + (parseFloat(r.total_money_amount) || 0), 0);
+    const totalReqMaterial = rows.reduce((sum, r) => sum + (parseFloat(r.total_required_material_amount) || 0), 0);
+    const totalReqAmount = rows.reduce((sum, r) => sum + (parseFloat(r.total_required_money_amount) || 0), 0);
+
+    // ✅ Balance Material = Sum of Required Material - Sum of Received Qty
+    const balanceMaterial = totalReqMaterial - totalReceivedQty;
+
+    // ✅ Profit/Loss = Sum of Required Amount - Sum of Total Amount
+    const profitLoss = totalReqAmount - totalAmount;
+
+    return {
+      totalReceivedQty: totalReceivedQty.toFixed(2),
+      totalAmount: totalAmount.toFixed(2),
+      totalReqMaterial: totalReqMaterial.toFixed(2),
+      totalReqAmount: totalReqAmount.toFixed(2),
+      balanceMaterial: balanceMaterial.toFixed(2),
+      profitLoss: profitLoss.toFixed(2),
+      profitLossType: profitLoss >= 0 ? 'profit' : 'loss',
+    };
+  };
 
   const existingTotals = calcTotals(existingEntries);
   const newTotals = calcTotals(newEntries);
+  const grandTotals = calcTotals([...existingEntries, ...newEntries]);
 
-  // Submit new entries - POST (correct)
+  // Submit new entries
   const handleSubmit = async () => {
     if (!siteId || !materialName) {
       setSubmitStatus({ type: 'error', message: 'Missing site or material data.' });
@@ -149,10 +182,9 @@ const SiteMaterialDetails = () => {
             received_quantity: entry.received_quantity,
             unit: entry.unit,
             rate_of_material: entry.rate_of_material,
-            required_money_amount: entry.required_money_amount || '',
-            total_required_money_amount: entry.total_required_money_amount || '',
-            total_required_material_amount: entry.total_required_material_amount || '',
-            remaining_material_amount: entry.remaining_material_amount || '',
+            total_money_amount: entry.total_money_amount,  // ✅ AUTO-CALCULATED
+            total_required_material_amount: entry.total_required_material_amount || '0',  // ✅ USER INPUT
+            total_required_money_amount: entry.total_required_money_amount || '0',  // ✅ USER INPUT
             siteId,
           }),
         });
@@ -167,7 +199,7 @@ const SiteMaterialDetails = () => {
       });
 
       setNewEntries([]);
-      await fetchExistingEntries(); // refresh with GET
+      await fetchExistingEntries();
     } catch (err) {
       console.error(err);
       setSubmitStatus({
@@ -189,14 +221,6 @@ const SiteMaterialDetails = () => {
         next.focus();
         next.select();
       }
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      const next = e.target.parentElement.nextSibling?.querySelector('input');
-      if (next) next.focus();
-    } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      const prev = e.target.parentElement.previousSibling?.querySelector('input');
-      if (prev) prev.focus();
     }
   };
 
@@ -206,9 +230,7 @@ const SiteMaterialDetails = () => {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 flex items-center justify-center">
         <div className="text-center p-12 bg-white rounded-3xl shadow-xl">
           <h1 className="text-2xl font-bold text-slate-900 mb-2">No Material Selected</h1>
-          <p className="text-slate-500 mb-6">
-            Please select a material from the site materials page.
-          </p>
+          <p className="text-slate-500 mb-6">Please select a material from the site materials page.</p>
           <button
             onClick={() => navigate(-1)}
             className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all"
@@ -231,7 +253,6 @@ const SiteMaterialDetails = () => {
     );
   }
 
-  // Rest of JSX remains exactly the same...
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -246,7 +267,6 @@ const SiteMaterialDetails = () => {
               <p className="text-sm text-slate-500 mt-1">
                 Site: {site?.ownerName} · {site?.location}
               </p>
-              <p className="text-xs text-slate-400">Site ID: {siteId}</p>
             </div>
             <div className="flex gap-3">
               <button
@@ -266,24 +286,9 @@ const SiteMaterialDetails = () => {
               >
                 {isSubmitting ? (
                   <>
-                    <svg
-                      className="animate-spin -ml-1 mr-2 h-4 w-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                     Saving...
                   </>
@@ -308,8 +313,41 @@ const SiteMaterialDetails = () => {
           </div>
         )}
 
+        {/* ✅ TOP SUMMARY CARDS */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+            <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Profit/Loss</div>
+            <div className={`text-4xl font-bold ${
+              grandTotals.profitLossType === 'profit' ? 'text-emerald-600' : 'text-red-600'
+            }`}>
+              ₹{Math.abs(parseFloat(grandTotals.profitLoss)).toLocaleString('en-IN')}
+            </div>
+            <div className={`text-xs font-medium mt-1 ${
+              grandTotals.profitLossType === 'profit' ? 'text-emerald-600' : 'text-red-600'
+            }`}>
+              {grandTotals.profitLossType === 'profit' ? '✓ Profit' : '✗ Loss'}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+            <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Balance Material</div>
+            <div className="text-4xl font-bold text-blue-600">
+              {parseFloat(grandTotals.balanceMaterial).toLocaleString('en-IN')}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">Total Required - Received</div>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+            <div className="text-sm font-semibold text-slate-600 uppercase tracking-wider mb-2">Total Received</div>
+            <div className="text-4xl font-bold text-indigo-600">
+              {parseFloat(grandTotals.totalReceivedQty).toLocaleString('en-IN')}
+            </div>
+            <div className="text-xs text-slate-500 mt-1">Units received</div>
+          </div>
+        </div>
+
         <div className="space-y-6">
-          {/* Existing entries table - SAME JSX */}
+          {/* Existing entries table */}
           {existingEntries.length > 0 && (
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
               <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-gray-50 to-gray-100">
@@ -319,39 +357,44 @@ const SiteMaterialDetails = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">#</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Sr No</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Received Qty</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Unit</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Rate/Material</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Required Money</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Total Req Money</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Total Req Material</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Remaining Material</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Rate</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">Total Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Req Material</th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">Req Amount</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {existingEntries.map((row, idx) => (
                       <tr key={row.id} className="hover:bg-slate-50/60">
                         <td className="px-4 py-3 text-sm font-medium text-slate-900 bg-slate-50">{idx + 1}</td>
+                        <td className="px-4 py-3 text-sm text-slate-500">
+                          {row.createdAt ? new Date(row.createdAt).toLocaleDateString('en-IN') : '-'}
+                        </td>
                         <td className="px-4 py-3 text-sm text-slate-900">{row.received_quantity}</td>
                         <td className="px-4 py-3 text-sm text-slate-900">{row.unit}</td>
-                        <td className="px-4 py-3 text-sm text-slate-900">₹{row.rate_of_material?.toLocaleString('en-IN')}</td>
-                        <td className="px-4 py-3 text-sm text-slate-900">₹{row.required_money_amount?.toLocaleString('en-IN')}</td>
-                        <td className="px-4 py-3 text-sm text-slate-900">₹{row.total_required_money_amount?.toLocaleString('en-IN')}</td>
-                        <td className="px-4 py-3 text-sm text-slate-900">{row.total_required_material_amount}</td>
-                        <td className="px-4 py-3 text-sm text-slate-900">{row.remaining_material_amount}</td>
-                        <td className="px-4 py-3 text-sm text-slate-500">
-                          {row.transaction_date ? new Date(row.transaction_date).toLocaleDateString('en-IN') : '-'}
+                        <td className="px-4 py-3 text-sm text-slate-900">₹{parseFloat(row.rate_of_material || 0).toLocaleString('en-IN')}</td>
+                        <td className="px-4 py-3 text-right font-bold text-slate-900">
+                          ₹{parseFloat(row.total_money_amount || 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-900">{row.total_required_material_amount || 0}</td>
+                        <td className="px-4 py-3 text-right text-slate-900">
+                          ₹{parseFloat(row.total_required_money_amount || 0).toLocaleString('en-IN')}
                         </td>
                       </tr>
                     ))}
-                    <tr className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold">
-                      <td className="px-4 py-3 text-sm bg-emerald-600">TOTAL</td>
-                      <td className="px-4 py-3 text-sm">{existingTotals.qty.toFixed(2)}</td>
-                      <td /><td /><td />
-                      <td className="px-4 py-3 text-sm">₹{existingTotals.money.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
-                      <td /><td /><td />
+                    <tr className="bg-gradient-to-r from-slate-700 to-slate-800 text-white font-bold">
+                      <td className="px-4 py-3 text-sm bg-slate-800">TOTAL</td>
+                      <td />
+                      <td className="px-4 py-3 text-sm">{existingTotals.totalReceivedQty}</td>
+                      <td />
+                      <td />
+                      <td className="px-4 py-3 text-right">₹{existingTotals.totalAmount}</td>
+                      <td className="px-4 py-3 text-sm">{existingTotals.totalReqMaterial}</td>
+                      <td className="px-4 py-3 text-right">₹{existingTotals.totalReqAmount}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -359,7 +402,7 @@ const SiteMaterialDetails = () => {
             </div>
           )}
 
-          {/* New entries table - SAME JSX */}
+          {/* New entries table */}
           <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
             <div className="p-6 border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100">
               <div className="flex items-center justify-between">
@@ -381,14 +424,13 @@ const SiteMaterialDetails = () => {
               <table ref={tableRef} className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-slate-900 to-slate-800 text-white">
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">#</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Sr No</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Received Qty *</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Unit *</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Rate/Material *</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Required Money</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Total Req Money</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Total Req Material</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Remaining Material</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Rate *</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">Total Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider">Req Material</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider">Req Amount</th>
                     <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider">Action</th>
                   </tr>
                 </thead>
@@ -396,33 +438,63 @@ const SiteMaterialDetails = () => {
                   {newEntries.map((row, idx) => (
                     <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
                       <td className="px-4 py-3 text-sm font-medium text-slate-900 bg-slate-50">{idx + 1}</td>
-                      {[
-                        'received_quantity',
-                        'unit',
-                        'rate_of_material',
-                        'required_money_amount',
-                        'total_required_money_amount',
-                        'total_required_material_amount',
-                        'remaining_material_amount',
-                      ].map((field) => (
-                        <td key={field} className="px-4 py-3">
-                          <input
-                            type={field === 'unit' ? 'text' : 'number'}
-                            step={field === 'unit' ? undefined : '0.01'}
-                            value={row[field]}
-                            onChange={(e) => updateNewEntryCell(idx, field, e.target.value)}
-                            onKeyDown={handleKeyPress}
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
-                            placeholder={
-                              field === 'unit'
-                                ? 'kg/ltr'
-                                : field === 'received_quantity' || field === 'rate_of_material'
-                                ? '0.00 *'
-                                : '0.00'
-                            }
-                          />
-                        </td>
-                      ))}
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={row.received_quantity}
+                          onChange={(e) => updateNewEntryCell(idx, 'received_quantity', e.target.value)}
+                          onKeyDown={handleKeyPress}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white"
+                          placeholder="0.00 *"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="text"
+                          value={row.unit}
+                          onChange={(e) => updateNewEntryCell(idx, 'unit', e.target.value)}
+                          onKeyDown={handleKeyPress}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white"
+                          placeholder="kg/ltr *"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={row.rate_of_material}
+                          onChange={(e) => updateNewEntryCell(idx, 'rate_of_material', e.target.value)}
+                          onKeyDown={handleKeyPress}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white"
+                          placeholder="0.00 *"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-lg bg-emerald-50 text-slate-900">
+                        ₹{parseFloat(row.total_money_amount || 0).toLocaleString('en-IN')}
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={row.total_required_material_amount}
+                          onChange={(e) => updateNewEntryCell(idx, 'total_required_material_amount', e.target.value)}
+                          onKeyDown={handleKeyPress}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white"
+                          placeholder="0.00"
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={row.total_required_money_amount}
+                          onChange={(e) => updateNewEntryCell(idx, 'total_required_money_amount', e.target.value)}
+                          onKeyDown={handleKeyPress}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all bg-white"
+                          placeholder="0.00"
+                        />
+                      </td>
                       <td className="px-4 py-3 text-center">
                         <button
                           onClick={() => deleteNewRow(idx)}
@@ -435,14 +507,15 @@ const SiteMaterialDetails = () => {
                     </tr>
                   ))}
                   {newEntries.length > 0 && (
-                    <tr className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold">
-                      <td className="px-4 py-3 text-sm bg-emerald-600">NEW TOTAL</td>
-                      <td className="px-4 py-3 text-sm">{newTotals.qty.toFixed(2)}</td>
-                      <td /><td /><td />
-                      <td className="px-4 py-3 text-sm">
-                        ₹{newTotals.money.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
-                      </td>
-                      <td /><td /><td />
+                    <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white font-bold">
+                      <td className="px-4 py-3 text-sm bg-indigo-600">NEW TOTAL</td>
+                      <td className="px-4 py-3 text-sm">{newTotals.totalReceivedQty}</td>
+                      <td />
+                      <td />
+                      <td className="px-4 py-3 text-right">₹{newTotals.totalAmount}</td>
+                      <td className="px-4 py-3 text-sm">{newTotals.totalReqMaterial}</td>
+                      <td className="px-4 py-3 text-right">₹{newTotals.totalReqAmount}</td>
+                      <td />
                     </tr>
                   )}
                 </tbody>
