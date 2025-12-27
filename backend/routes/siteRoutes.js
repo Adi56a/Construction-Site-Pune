@@ -4,6 +4,7 @@ const Site = require('../models/siteModel');
 const router = express.Router();
 const MaterialList = require('../models/materialListModel')
 const SiteMaterial = require('../models/siteMaterialModel')
+const LabourList  = require('../models/LaborListModel')
 
 router.get('/' , (req,res) => {
     res.send("Site api is running")
@@ -192,66 +193,67 @@ router.get('/getAllMaterialList', async (req, res) => {
 
 router.post('/addMaterialDetailsToSite', async (req, res) => {
   try {
-    // Destructure the required fields from the request body
+    // ✅ EXACTLY MATCHING DATABASE SCHEMA
     const {
       material_name,
       received_quantity,
       unit,
       rate_of_material,
-      required_money_amount,
-      total_required_money_amount,
-      total_required_material_amount,
-      remaining_material_amount,
+      total_money_amount,        // ✅ AUTO-CALCULATED FROM FRONTEND
+      total_required_money_amount,   // ✅ USER INPUT
+      total_required_material_amount, // ✅ USER INPUT
       siteId,
     } = req.body;
 
-    // Check if all required fields are provided
+    // ✅ VALIDATE REQUIRED FIELDS
     if (!material_name || !received_quantity || !unit || !rate_of_material || !siteId) {
-      return res.status(400).json({ message: "All required fields must be provided." });
+      return res.status(400).json({ 
+        message: "All required fields must be provided: material_name, received_quantity, unit, rate_of_material, siteId" 
+      });
     }
 
-    // Create a new SiteMaterial document
+    // ✅ CREATE NEW MATERIAL WITH EXACT DATABASE FIELDS
     const newMaterial = new SiteMaterial({
-      material_name,
-      received_quantity,
-      unit,
-      rate_of_material,
-      required_money_amount,
-      total_required_money_amount,
-      total_required_material_amount,
-      remaining_material_amount,
-      siteId,
+      material_name: material_name.trim(),
+      received_quantity: parseFloat(received_quantity),
+      unit: unit.trim(),
+      rate_of_material: parseFloat(rate_of_material),
+      total_money_amount: parseFloat(total_money_amount) || 0,        // ✅ FROM FRONTEND CALCULATION
+      total_required_money_amount: parseFloat(total_required_money_amount) || 0,   // ✅ USER INPUT
+      total_required_material_amount: parseFloat(total_required_material_amount) || 0, // ✅ USER INPUT
+      transaction_date: new Date(),
+      siteId: siteId,
     });
 
-    // Save the new material to the SiteMaterial collection
+    // ✅ SAVE THE MATERIAL
     const savedMaterial = await newMaterial.save();
 
-    // After saving the new material, update the Site document
+    // ✅ UPDATE SITE DOCUMENT
     const site = await Site.findById(siteId);
     if (!site) {
       return res.status(404).json({ message: "Site not found." });
     }
 
-    // Ensure the materialID array exists and initialize if not
     if (!site.materialID) {
-      site.materialID = [];  // Initialize the array if it doesn't exist
+      site.materialID = [];
     }
 
-    // Append the new material's ID to the materialID array of the Site document
     site.materialID.push(savedMaterial._id);
-
-    // Save the updated Site document
     await site.save();
 
-    // Respond with the saved material and a success message
+    // ✅ RETURN SUCCESS WITH SAVED MATERIAL
     return res.status(201).json({
       message: 'Material added successfully and Site updated.',
       material: savedMaterial,
     });
+
   } catch (error) {
-    // Handle any errors during the process
-    console.error(error);
-    return res.status(500).json({ message: 'Error adding material to site.' });
+    // ✅ BETTER ERROR LOGGING
+    console.error('Error adding material:', error.message);
+    return res.status(500).json({ 
+      message: 'Error adding material to site.',
+      error: error.message 
+    });
   }
 });
 
@@ -371,5 +373,58 @@ router.get('/getMaterialDetails', async (req, res) => {
 });
 
 
+router.post('/addLabourList', async (req, res) => {
+  const { name } = req.body;
+
+ 
+  if (!name) {
+    return res.status(400).json({ message: "Name is required" });
+  }
+
+  try {
+    
+    let newNames = Array.isArray(name) ? name : [name];
+
+   
+    let labourList = await LabourList.findOne();
+
+    if (!labourList) {
+   
+      labourList = new LabourList({
+        LabourList: newNames
+      });
+    } else {
+  
+      labourList.LabourList.push(...newNames);
+    }
+
+    
+    await labourList.save();
+
+    
+    res.status(200).json(labourList);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/getLabourList', async (req, res) => {
+  try {
+    // Find the LabourList document (assuming there is only one document)
+    const labourList = await LabourList.findOne();
+
+    // If no LabourList document is found, return a 404 error
+    if (!labourList) {
+      return res.status(404).json({ message: 'Labour list not found' });
+    }
+
+    // Return the LabourList array
+    res.status(200).json(labourList.LabourList);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
 module.exports = router;
