@@ -12,6 +12,7 @@ import Rent from './pages/Rent'
 import AddRentBuilding from './pages/AddRentBuilding'
 import FlatPaymentEntries from './pages/FlatPaymentEntries'
 import Expense from './pages/Expense'
+import LabourList from './pages/LabourList'
 
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Route path="/add-rent-building" element={<AddRentBuilding />} />
         <Route path="/flat-payment-entries" element={<FlatPaymentEntries />} />
         <Route path="/expense" element={<Expense />} />
+        <Route path="/add-labour-list" element={<LabourList />} />
 
 
         
